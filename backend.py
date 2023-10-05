@@ -1,4 +1,4 @@
-import math
+
 class Penguin:
     ID = 0
     edge = False
@@ -38,18 +38,7 @@ class Penguin:
             N *= 2
             return -self.heat_loss
 
-
-def argument_of_complex_number(complex_number):
-    return math.atan(complex_number.imag / complex_number.real)
-
-
-def distance_between_two_points(complex1, complex2):
-    return math.sqrt(
-        (complex1.real - complex2.real) * (complex1.real - complex2.real) + (complex1.imag - complex2.imag) * (
-                    complex1.imag - complex2.imag))
-
-
-# generate penguins
+#1 generate penguins
 
 peripheral_penguins = {}
 central_penguins = {}
@@ -59,21 +48,11 @@ for i in range(1, 43):
 for i in range(1, 57):
     central_penguins[i] = Penguin(i, True, 0, (i, i))
 
-
 # 2 Compute the wind flow around the huddle
 
-def Joukowsky(z):
-    X, Y = z
-    return X * (1 + 1 / (X * X + Y * Y))
 
-
-def real_part_Joukowsky(z):
-    X, Y = z
-    return 1 + (Y * Y - X * X) / ((X * X + Y * Y) * (X * X + Y * Y)), (-2 * X * Y) / ((X * X + Y * Y) * (X * X + Y * Y))
-
-
-def wind_velocity():
-    return real_part_Joukowsky(Inverse_Schwarz_Cristoffel)
+#def wind_velocity():
+#    return real_part_Joukowsky(Inverse_Schwarz_Cristoffel)
 
 
 # 3 Compute the profile around the huddle

@@ -79,6 +79,6 @@ class PolygonDrawer(object):
 def DrawPolygon():
     pd = PolygonDrawer("Polygon")
     image = pd.run()
-    cv2.imwrite("polygon.png", image)
+    #cv2.imwrite("computes.png", image)
     print("Polygon = %s" % pd.points)
     return pd.points

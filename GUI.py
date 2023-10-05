@@ -1,49 +1,77 @@
-from tkinter import *
+# img_viewer.py
+import PySimpleGUI as sg
+import os.path
+import PlotPolygon
+from Model import ModelSample
 
-root = Tk()  # create root window
-root.title("Simulation of penguins")  # title of the GUI window
-root.wm_maxsize()  # specify the max size the window can expand to
-root.minsize(800,600)
-#root.config(bg="skyblue")  # specify background color
+# First the window layout in 2 columns
+file_list_column = [
+    [sg.Text('HUDDLE PENGUINS\n SIMULATION', enable_events=True,
+              key='-TEXT-', font=('Arial Bold', 20),
+              expand_x=True, justification='center')],
+    [sg.Text('Name of simulation: ', key='-NAME-', font=('Arial ', 10), expand_x=True, justification='left')],
+    [sg.Input('', enable_events=True, key='-NAMEINPUT-', font=('Arial Bold', 10), expand_x=True, justification='left')],
+    [sg.Text('Number of penguins: ', key='-NUMBER-', font=('Arial ', 10), expand_x=True, justification='left')],
+    [sg.Input('', enable_events=True, key='-NUMBERINPUT-', font=('Arial Bold', 10), expand_x=True, justification='left')],
+    [sg.Text('Peclet\'s number: ', key='-PECLET-', font=('Arial ', 10), expand_x=True, justification='left')],
+    [sg.Input('', enable_events=True, key='-PECLETINPUT-', font=('Arial Bold', 10), expand_x=True, justification='left')],
+    [sg.Text('R: ', key='-R-', font=('Arial ', 10), expand_x=True, justification='left')],
+    [sg.Input('', enable_events=True, key='-RINPUT-', font=('Arial Bold', 10), expand_x=True, justification='left')],
+    [sg.Button('Set polygon of huddle', key='-SET-', font=('Arial Bold', 10)),sg.Button('Run simulation', key='-RUN-', font=('Arial Bold', 10))],
 
-bg = PhotoImage(file="snow.png")
+]
 
-# Show image using label
-#label1 = Label(root, image=bg1)
-#label1.place(x=0,y=0)
+# For now will only show the name of the file that was chosen
+
+image_viewer_column = [
+
+    [sg.Text(text='Penguins of Madagascar',
+              font=('Arial Bold', 10),
+              size=25, expand_x=True,
+              justification='center')],
+    [sg.Image('ping.png',
+               expand_x=True, expand_y=True)]
+]
+# ----- Full layout -----
+
+layout = [
+    [
+        sg.Column(file_list_column),
+        sg.VSeperator(),
+        sg.Column(image_viewer_column),
+    ]
+]
+
+window = sg.Window("Huddle penguins simulation", layout)
 
 
-root.grid_rowconfigure(0, weight=1)
-root.grid_columnconfigure(0, weight=1)
+# Run the Event Loop
 
-# Create left and right frames
-left_frame = Frame(root, width=200, height=400, bg='grey')
-left_frame.grid(row=0, column=0, padx=10, pady=5)
+model = ModelSample
 
-right_frame = Frame(root, width=850, height=700, bg='grey')
-right_frame.grid(row=0, column=1, padx=10, pady=5)
+while True:
 
-# load image to be "edited"
-image = PhotoImage(file="ping2.gif")
-tekst = "nece meni drina biti kapija"
-original_image = image.subsample(3,3)  # resize image using subsample
-Label(left_frame, text="Poruka").grid(row=1, column=0, padx=5, pady=5)
+    event, values = window.read()
 
-# Display image in right_frame
-Label(right_frame, image=image).grid(row=0,column=0, padx=5, pady=5)
+    if event == "Exit" or event == sg.WIN_CLOSED:
 
-# Create tool bar frame
-tool_bar = Frame(left_frame, width=180, height=185)
-tool_bar.grid(row=2, column=0, padx=5, pady=5)
+        break
 
-# Example labels that serve as placeholders for other widgets
-Label(tool_bar, text="Tools", relief=RAISED).grid(row=0, column=0, padx=5, pady=3, ipadx=10)  # ipadx is padding inside the Label widget
-Label(tool_bar, text="Filters", relief=RAISED).grid(row=0, column=1, padx=5, pady=3, ipadx=10)
+    # Folder name was filled in, make a list of files in the folder
 
-# Example labels that could be displayed under the "Tool" menu
-Label(tool_bar, text="Select").grid(row=1, column=0, padx=5, pady=5)
-Label(tool_bar, text="Crop").grid(row=2, column=0, padx=5, pady=5)
-Label(tool_bar, text="Rotate & Flip").grid(row=3, column=0, padx=5, pady=5)
-Label(tool_bar, text="Resize").grid(row=4, column=0, padx=5, pady=5)
-Label(tool_bar, text="Exposure").grid(row=5, column=0, padx=5, pady=5)
-root.mainloop()
+    model.name = values["-NAMEINPUT-"]
+    model.number = values["-NUMBERINPUT-"]
+    model.Peclet = values["-PECLETINPUT-"]
+    model.R = values["-RINPUT-"]
+
+    if event == "-SET-":
+        pd = PlotPolygon.DrawPolygon()
+        model.polygon = pd
+    elif event == "-RUN-":
+        try:
+            model.run()
+        except:
+            sg.popup("Fill all the fields and set the polygon to start the simulation")
+            print("Bacen izuzetak")
+
+window.close()
