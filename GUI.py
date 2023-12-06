@@ -7,17 +7,20 @@ from Model import ModelSample
 # First the window layout in 2 columns
 file_list_column = [
     [sg.Text('HUDDLE PENGUINS\n SIMULATION', enable_events=True,
-              key='-TEXT-', font=('Arial Bold', 20),
-              expand_x=True, justification='center')],
+             key='-TEXT-', font=('Arial Bold', 20),
+             expand_x=True, justification='center')],
     [sg.Text('Name of simulation: ', key='-NAME-', font=('Arial ', 10), expand_x=True, justification='left')],
     [sg.Input('', enable_events=True, key='-NAMEINPUT-', font=('Arial Bold', 10), expand_x=True, justification='left')],
     [sg.Text('Number of penguins: ', key='-NUMBER-', font=('Arial ', 10), expand_x=True, justification='left')],
-    [sg.Input('', enable_events=True, key='-NUMBERINPUT-', font=('Arial Bold', 10), expand_x=True, justification='left')],
+    [sg.Input('', enable_events=True, key='-NUMBERINPUT-', font=('Arial Bold', 10), expand_x=True,
+              justification='left')],
     [sg.Text('Peclet\'s number: ', key='-PECLET-', font=('Arial ', 10), expand_x=True, justification='left')],
-    [sg.Input('', enable_events=True, key='-PECLETINPUT-', font=('Arial Bold', 10), expand_x=True, justification='left')],
+    [sg.Input('', enable_events=True, key='-PECLETINPUT-', font=('Arial Bold', 10), expand_x=True,
+              justification='left')],
     [sg.Text('R: ', key='-R-', font=('Arial ', 10), expand_x=True, justification='left')],
     [sg.Input('', enable_events=True, key='-RINPUT-', font=('Arial Bold', 10), expand_x=True, justification='left')],
-    [sg.Button('Set polygon of huddle', key='-SET-', font=('Arial Bold', 10)),sg.Button('Run simulation', key='-RUN-', font=('Arial Bold', 10))],
+    [sg.Button('Set polygon of huddle', key='-SET-', font=('Arial Bold', 10)),
+     sg.Button('Run simulation', key='-RUN-', font=('Arial Bold', 10))],
 
 ]
 
@@ -26,11 +29,11 @@ file_list_column = [
 image_viewer_column = [
 
     [sg.Text(text='Penguins of Madagascar',
-              font=('Arial Bold', 10),
-              size=25, expand_x=True,
-              justification='center')],
+             font=('Arial Bold', 10),
+             size=25, expand_x=True,
+             justification='center')],
     [sg.Image('ping.png',
-               expand_x=True, expand_y=True)]
+              expand_x=True, expand_y=True)]
 ]
 # ----- Full layout -----
 
@@ -44,17 +47,15 @@ layout = [
 
 window = sg.Window("Huddle penguins simulation", layout)
 
-
 # Run the Event Loop
 
-model = ModelSample
+model = ModelSample()
 
 while True:
 
     event, values = window.read()
 
     if event == "Exit" or event == sg.WIN_CLOSED:
-
         break
 
     # Folder name was filled in, make a list of files in the folder
@@ -65,13 +66,11 @@ while True:
     model.R = values["-RINPUT-"]
 
     if event == "-SET-":
-        pd = PlotPolygon.DrawPolygon()
-        model.polygon = pd
+        model.polygon = PlotPolygon.DrawPolygon()
     elif event == "-RUN-":
         try:
             model.run()
-        except:
-            sg.popup("Fill all the fields and set the polygon to start the simulation")
-            print("Bacen izuzetak")
+        except ValueError as v:
+            sg.popup(str(v))
 
 window.close()

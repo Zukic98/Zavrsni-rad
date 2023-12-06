@@ -13,7 +13,6 @@ def JoukowskyRealPartGradient(z):
 def AngleBetweenTwoLines(l1, l2):
     return l1.angle_between(l2)
 
-
 #def real_part_Joukowsky(z):
 #    X, Y = z
 #    return 1 + (Y * Y - X * X) / ((X * X + Y * Y) * (X * X + Y * Y)), (-2 * X * Y) / ((X * X + Y * Y) * (X * X + Y * Y))
