@@ -81,4 +81,5 @@ def DrawPolygon():
     image = pd.run()
     #cv2.imwrite("computes.png", image)
     print("Polygon = %s" % pd.points)
+    print(type(pd.points))
     return pd.points

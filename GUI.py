@@ -1,8 +1,11 @@
 # img_viewer.py
 import PySimpleGUI as sg
 import os.path
+from shapely import Polygon
 import PlotPolygon
 from Model import ModelSample
+from shapely.ops import transform
+from shapely.affinity import scale
 
 # First the window layout in 2 columns
 file_list_column = [
@@ -66,7 +69,7 @@ while True:
     model.R = values["-RINPUT-"]
 
     if event == "-SET-":
-        model.polygon = PlotPolygon.DrawPolygon()
+        model.polygon = transform(lambda x, y: (x, y + 1000) , scale(Polygon(PlotPolygon.DrawPolygon()), yfact = -1, origin = (1, 0)))
     elif event == "-RUN-":
         try:
             model.run()

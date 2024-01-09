@@ -13,7 +13,6 @@ class Penguin:
         self.position = position
         self.neighbours = neighbours
         self.heat_loss = 0
-
     def update_heat_loss(self, above_boundary, belove_boundary, delta_r, f):
         # Rombergs algorithm for integration
         N = 2
@@ -46,7 +45,7 @@ central_penguins = {}
 for i in range(1, 43):
     peripheral_penguins[i] = Penguin(i, True, 0, (i, i))
 for i in range(1, 57):
-    central_penguins[i] = Penguin(i, True, 0, (i, i))
+    central_penguins[i] = Penguin(i, False, 0, (i, i))
 
 # 2 Compute the wind flow around the huddle
 

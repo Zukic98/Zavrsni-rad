@@ -1,6 +1,5 @@
 import matplotlib
 matplotlib.use('TKAgg')
-#matplotlib.use('TKAgg')
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
@@ -16,7 +15,8 @@ ax.add_patch(circle2)
 
 def reset(event):
     circle1.set_visible(False)
-
+    ax.clear()
 
 button.on_clicked(reset)
 plt.show()
+
