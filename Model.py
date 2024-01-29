@@ -1,7 +1,12 @@
 import matplotlib
 matplotlib.use('TKAgg')
 from matplotlib import pyplot as plt
+
+from shapely.geometry import Point
+
 import formulas
+
+import Penguin
 class ModelSample:
     name = None
     number = None
@@ -12,24 +17,48 @@ class ModelSample:
     def __init__(self):
         pass
 
+    def isPointOutsideOfPolygon(self,x,y):
+        return Point(x,y).within(self.polygon)
+    def generateSeed(self):
+        2+2
     def generatePenguins(self):
         #define polygon boundaries of huddle
         x, y = self.polygon.exterior.xy
+
+        fig = plt.figure()
+        board = plt.axes()
+
         plt.plot(x, y, c="blue")
         #find center of polygon
         x,y = formulas.findCenterOfPolygon(self.polygon)
-        #create core
+
         radius_of_penguin = formulas.getRadiusForCircles(formulas.areaOfPolygon(self.polygon), self.number)
-        for i in range(1,self.number + 1):
-            if :
+        radius_of_penguin = int(radius_of_penguin)
+        board.add_patch(plt.Circle((x,y), radius_of_penguin, fc = "cyan"))
 
-        for i in range(1, 43):
-            peripheral_penguins[i] = Penguin(i, True, 0, (i, i))
-        for i in range(1, 57):
-            central_penguins[i] = Penguin(i, False, 0, (i, i))
-        plt.plot(x, y, marker="o", markersize=10, markeredgecolor="red", markerfacecolor="green")
+        peripheral_penguins = {}
+        central_penguins = {}
+        circles = {}
 
+        peripheral_penguins[1] = Penguin.Penguin(ID=1, edge=True, heat_loss=0, position=(x, y), radius = radius_of_penguin, neighbours=[])
+        circles[1] = plt.Circle((x, y), radius_of_penguin, fc="cyan")
+        board.add_patch(circles[1])
 
+        y = y - 2 * radius_of_penguin
+
+        peripheral_penguins[2] = Penguin.Penguin(ID=2, edge=True, heat_loss=0, position=(x, y), radius=radius_of_penguin, neighbours=[])
+
+        circles[2] = plt.Circle((x, y), radius_of_penguin, fc="cyan")
+        board.add_patch(circles[2])
+
+        
+
+        plt.autoscale()
+        plt.draw()
+
+        #for i in range(3,self.number):
+
+        #    for j in range(6):
 
         plt.show()
 

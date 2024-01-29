@@ -1,5 +1,6 @@
 import math
 import geopandas as gpd
+import sympy
 def InverseSchwarzCristoffelMapping(points_and_angles, C):
     def product(point_z):
         accumulator = 1
@@ -28,18 +29,31 @@ def distance_between_two_points(complex1, complex2):
 
 def areaOfPolygon(arrayOfPoints):
     area = 0
+    print(arrayOfPoints)
+    arrayOfPoints = tuple(arrayOfPoints.exterior.coords)
+    print(str(arrayOfPoints))
     for i in range(len(arrayOfPoints) - 1):
         area += arrayOfPoints[i][0] * arrayOfPoints[i + 1][1] - arrayOfPoints[i + 1][0] * arrayOfPoints[i][1]
-    area += arrayOfPoints[len(arrayOfPoints) - 1][0] * arrayOfPoints[0][1] - arrayOfPoints[len(arrayOfPoints) - 1][1] * arrayOfPoints[0][0]
+
+    area += arrayOfPoints[len(arrayOfPoints)-1][0] * arrayOfPoints[0][1] - arrayOfPoints[len(arrayOfPoints) - 1][1] * arrayOfPoints[0][0]
     return math.fabs(area/2)
 
 def getRadiusForCircles(polygonsArea,n):
-    return math.sqrt(polygonsArea/(n*math.pi))
+    return math.sqrt(polygonsArea/(float(n)*math.pi))
 
 def findCenterOfPolygon(polygon):
     center = gpd.GeoSeries([polygon])
     return (center.representative_point().x, center.representative_point().y)
 
+def getTwoPossibleCircles(x1_center, y1_center, r1,x2_center, y2_center, r2):
+    x, y = sympy.symbols("x y", real=True)
+
+    eq1 = sympy.Eq((x1_center - x) ** 2 + (y1_center - y) ** 2, (r1+r1) ** 2)
+    eq2 = sympy.Eq((x2_center - x) ** 2 + (y2_center - y) ** 2, (r2+r2) ** 2)
+
+    t = sympy.solve([eq1, eq2])
+
+    return list(t[0].values())[0], list(t[0].values())[1], list(t[1].values())[0], list(t[1].values())[1]
 
 #points_and_angles = [ ( 1+1j,math.pi/3), ( 1+1j,math.pi/3),( 1+1j,math.pi/3),( 1+1j,math.pi/3),( 1+1j,math.pi/3)]
 #f = InverseSchwarzCristoffelMapping(points_and_angles,4)

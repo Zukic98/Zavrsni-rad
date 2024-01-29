@@ -1,43 +1,27 @@
-import math
-
+import matplotlib
+matplotlib.use('TKAgg')
 from matplotlib import pyplot as plt
+from matplotlib import animation as an
+import numpy as np
 
-fig1, ax = plt.subplots()
+fig = plt.figure()
+board = plt.axes(xlim=(0, 200), ylim=(0, 100))
 
-ax.set_xlim(0, 100)
-ax.set_ylim(0,100)
-ax.set_box_aspect(1)
+x = 10
+y = 10
+r = 10
 
-def get_partition_of_neighbours(central_position_x,central_position_y, number_of_neighbours):
-    if number_of_neighbours == 0:
-        c1 = plt.Circle((central_position_x, central_position_y), radius=3)
-        ax.add_patch(c1)
-    if number_of_neighbours == 1:
-        c2 = plt.Circle((central_position_x, central_position_y + 6), radius=3)
-        plt.gca().add_artist(c2)
-    if number_of_neighbours == 2:
-        c3 = plt.Circle((central_position_x, central_position_y - 6), radius=3)
-        plt.gca().add_artist(c3)
-    if number_of_neighbours == 3:
-        c4 = plt.Circle((central_position_x + 5.2, central_position_y + 3), radius=3)
-        plt.gca().add_artist(c4)
-    if number_of_neighbours == 4:
-        c5 = plt.Circle((central_position_x + 5.2, central_position_y - 3), radius=3)
-        plt.gca().add_artist(c5)
-    if number_of_neighbours == 5:
-        c6 = plt.Circle((central_position_x - 5.2, central_position_y + 3), radius=3)
-        plt.gca().add_artist(c6)
-    if number_of_neighbours == 6:
-        c7 = plt.Circle((central_position_x - 5.2, central_position_y - 3), radius=3)
-        plt.gca().add_artist(c7)
+for p in range(10):
+    circle = plt.Circle((x, y), r, fc='w', ec='b')
+    board.add_patch(circle)
 
-number_of_penguins = 50
-number_of_clusters = number_of_penguins/6
+    #annotation = plt.annotate("", xytext=(x, y), xy=(x+10, y+10), arrowprops=dict(facecolor='r', edgecolor='r', headwidth=6, headlength=6, width=0.1))
 
-for i in range (1,number_of_penguins+1,6):
-    get_partition_of_neighbours(40+i*10,40*i*10,6)
+    plt.draw()
+    plt.pause(0.2)
+    circle.remove()
+    #annotation.remove()
+    x += 10
+    y += 10
 
-#get_partition_of_neighbours(15, 15,number_of_penguins % number_of_clusters)
-
-
-plt.draw()
+plt.show()
