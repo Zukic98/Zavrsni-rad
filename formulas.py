@@ -1,6 +1,6 @@
 import math
 import geopandas as gpd
-import sympy
+from scipy.optimize import fsolve
 def InverseSchwarzCristoffelMapping(points_and_angles, C):
     def product(point_z):
         accumulator = 1
@@ -29,9 +29,9 @@ def distance_between_two_points(complex1, complex2):
 
 def areaOfPolygon(arrayOfPoints):
     area = 0
-    print(arrayOfPoints)
+
     arrayOfPoints = tuple(arrayOfPoints.exterior.coords)
-    print(str(arrayOfPoints))
+
     for i in range(len(arrayOfPoints) - 1):
         area += arrayOfPoints[i][0] * arrayOfPoints[i + 1][1] - arrayOfPoints[i + 1][0] * arrayOfPoints[i][1]
 
@@ -39,21 +39,38 @@ def areaOfPolygon(arrayOfPoints):
     return math.fabs(area/2)
 
 def getRadiusForCircles(polygonsArea,n):
-    return math.sqrt(polygonsArea/(float(n)*math.pi))
+    return math.sqrt(polygonsArea/(n*math.pi))
 
 def findCenterOfPolygon(polygon):
     center = gpd.GeoSeries([polygon])
-    return (center.representative_point().x, center.representative_point().y)
+    return center.representative_point()[0].x.item(), center.representative_point()[0].y.item()
 
-def getTwoPossibleCircles(x1_center, y1_center, r1,x2_center, y2_center, r2):
-    x, y = sympy.symbols("x y", real=True)
+def getTwoPossibleCircles(x1_center, y1_center, x2_center, y2_center, r):
+    q = 2*y1_center - 2*y2_center
+    p = -x1_center**2 + x2_center**2 - y1_center**2 + y2_center**2
+    t = -2*x1_center + 2*x2_center
 
-    eq1 = sympy.Eq((x1_center - x) ** 2 + (y1_center - y) ** 2, (r1+r1) ** 2)
-    eq2 = sympy.Eq((x2_center - x) ** 2 + (y2_center - y) ** 2, (r2+r2) ** 2)
+    if t == 0.:
+        y = (x1_center**2 - x2_center**2 + y1_center**2 - y2_center**2) / (2*y1_center-2*y2_center)
+        b = -2*x1_center
+        c = x1_center**2 + y1_center**2 - 2*y1_center*y+y**2-4*r*r
+        return (-b+math.sqrt(b*b - 4*1*c))/2, y, (-b-math.sqrt(b*b - 4*1*c))/2, y
+    if q == 0.:
+        x = p/t
+        b = -2*y1_center
+        c = x**2 - 2*x1_center*x+x1_center**2 - 4*r*r
+        return x, (-b+math.sqrt(b**2 - 4*1*c))/2, x, (-b-math.sqrt(b**2 - 4*1*c))/2
 
-    t = sympy.solve([eq1, eq2])
+    a = q*q + t*t
+    b = -2*y1_center*t*t + 2*p*q - 2*x1_center*t*q
+    c = x1_center*x1_center*t*t - 2*x1_center*t*p + p*p + y1_center*y1_center*t*t - 4*r*r*t*t
 
-    return list(t[0].values())[0], list(t[0].values())[1], list(t[1].values())[0], list(t[1].values())[1]
+    y1 = (-b + math.sqrt(b*b-4*a*c)) / (2*a)
+    y2 = (-b - math.sqrt(b * b - 4 * a * c)) / (2 * a)
+
+    x1 = (p+q*y1)/t
+    x2 = (p+q*y2)/t
+    return x1, y1, x2, y2
 
 #points_and_angles = [ ( 1+1j,math.pi/3), ( 1+1j,math.pi/3),( 1+1j,math.pi/3),( 1+1j,math.pi/3),( 1+1j,math.pi/3)]
 #f = InverseSchwarzCristoffelMapping(points_and_angles,4)

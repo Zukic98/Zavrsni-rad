@@ -31,11 +31,11 @@ class PolygonDrawer(object):
             self.current = (x, y)
         elif event == cv2.EVENT_LBUTTONDOWN:
             # Left click means adding a point at current position to the list of points
-            print("Adding point #%d with position(%d,%d)" % (len(self.points), x, y))
+            #print("Adding point #%d with position(%d,%d)" % (len(self.points), x, y))
             self.points.append((x, y))
         elif event == cv2.EVENT_RBUTTONDOWN:
             # Right click means we're done
-            print("Completing polygon with %d points." % len(self.points))
+            #print("Completing polygon with %d points." % len(self.points))
             self.done = True
 
 
@@ -80,6 +80,5 @@ def DrawPolygon():
     pd = PolygonDrawer("Polygon")
     image = pd.run()
     #cv2.imwrite("computes.png", image)
-    print("Polygon = %s" % pd.points)
-    print(type(pd.points))
+    #print("Polygon = %s" % pd.points)
     return pd.points
