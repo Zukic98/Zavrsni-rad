@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 
 class Penguin:
     ID = 0
-    edge = False
+    edge = True
     heat_loss = 0.
     position = (0, 0)
     radius = 0

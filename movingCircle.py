@@ -2,6 +2,8 @@ import matplotlib
 matplotlib.use('TKAgg')
 from matplotlib import pyplot as plt
 
+import PlotPolygon
+
 def setPenguins():
     fig = plt.figure()
     board = plt.axes(xlim=(0, 800), ylim=(0, 800))
@@ -26,5 +28,5 @@ def setPenguins():
         y += 10
 
     plt.show()
+t = PlotPolygon.DrawPolygon()
 
-setPenguins()
