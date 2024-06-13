@@ -1,26 +1,65 @@
 import math
 import geopandas as gpd
 from scipy.optimize import fsolve
+import matplotlib
+matplotlib.use('TKAgg')
+from matplotlib import pyplot as plt
 
+#points and angles must be dictionary where key is complex number and angle is float type
+def InverseSchwarzCristoffelMapping(points):
+    file = open("dataTransfer.txt", "w")
 
-def InverseSchwarzCristoffelMapping(points_and_angles, C):
+    file.write("start\n")
+
+    string_x_array = ""
+    string_y_array = ""
+    for x,y in points:
+        string_x_array = string_x_array + str(x) + ","
+        string_y_array = string_y_array + str(y) + ","
+
+    #write in file in format x,y,z\nk,p,r
+    file.write(string_x_array[:-1] + "\n" + string_y_array[:-1])
+
+    file.close()
+
     def product(point_z):
-        accumulator = 1
-        for x in points_and_angles:
-            point, angle = x
-            accumulator *= pow((1 - point_z / point), -angle)
-        return C * accumulator
+        file = open("dataTransfer.txt", "w")
+
+        string_of_complex = "load\n" + point_z.real + "+" + point_z.imag + "im"
+
+        file.write(string_of_complex)
+
+        file.close()
+
+        returnValue = 0.
+
+        while True:
+            file = open("dataTransfer.txt", "r")
+
+            firstLine = file.readline()
+
+            if firstLine == "result":
+
+                real, imag =  file.readline().replace("im","").split("+")
+
+                returnValue = complex(float(real), float(imag))
+
+                break
+
+            file.close()
+
+
+        return returnValue
 
     return product
-
+"""
 def JoukowskyRealPartGradient(z):
     return 1 + (-z.real * z.real + z.imag * z.imag) / pow((z.real * z.real + z.imag * z.imag), 2), (-2 * z.real * z.imag) / pow((z.real * z.real + z.imag * z.imag), 2)
 
-#def AngleBetweenTwoLines():
-#    return 2+2
 def real_part_Joukowsky(z):
     X, Y = z
     return 1 + (Y * Y - X * X) / ((X * X + Y * Y) * (X * X + Y * Y)), (-2 * X * Y) / ((X * X + Y * Y) * (X * X + Y * Y))
+"""
 
 def argument_of_complex_number(complex_number):
     return math.atan(complex_number.imag / complex_number.real)
@@ -42,9 +81,9 @@ def angleBetweenPoints(point1 , centralPoint, point2):
     angle = math.acos((vector1[0]*vector2[0]+vector1[1]*vector2[1]) / (math.sqrt( vector1[0]**2 + vector1[1]**2) * math.sqrt( vector2[0]**2 + vector2[1]**2 )))
     #if angle < 0:
     #    angle = 180 - angle
-    return (angle/math.pi)*180
+    return angle
 def areaOfPolygon(arrayOfPoints):
-    area = 0
+    area = 0.
 
     arrayOfPoints = tuple(arrayOfPoints.exterior.coords)
 
@@ -70,24 +109,31 @@ def getTwoPossibleCircles(x1_center, y1_center, x2_center, y2_center, r1, r2, r3
     p = R1 - R2 -x1_center**2 + x2_center**2 - y1_center**2 + y2_center**2
     t = 2 * (x2_center - x1_center)
 
-    print("T:"+str(abs(t))+"Q:"+str(abs(q)))
-
     if abs(t) < 1:
 
         y = p / q
         b = -2 * x1_center
         c = x1_center ** 2 + y1_center ** 2 - 2 * y1_center * y + y ** 2 - R1
-        return (-b + math.sqrt(b * b - 4 * c)) / 2, y, (-b - math.sqrt(b * b - 4 * c)) / 2, y
+        if b * b - 4 * c < 0:
+            print("This")
+        return round((-b + math.sqrt(b * b - 4 * c)) / 2,2), round(y,2), round((-b - math.sqrt(b * b - 4 * c)) / 2,2), round(y,2)
+
     if abs(q) < 1:
 
         x = p / t
         b = -2 * y1_center
         c = x1_center ** 2 - 2 * x1_center * x + x ** 2 + y1_center ** 2 - R1
-        return x, (-b + math.sqrt(b ** 2 - 4 * c)) / 2, x, (-b - math.sqrt(b ** 2 - 4 * c)) / 2
+        if b ** 2 - 4 * c < 0:
+            print("Ovaj")
+        return round(x,2), round((-b + math.sqrt(b ** 2 - 4 * c)) / 2,2), round(x,2), round((-b - math.sqrt(b ** 2 - 4 * c)) / 2,2)
 
     a = t**2 + q**2
     b = 2 * x1_center * t * q - 2*p*q - 2*y1_center*t**2
     c = x1_center**2 * t**2 - 2 * x1_center * t * p + p * p + y1_center**2 * t**2 - R1 * t**2
+
+    if b * b - 4 * a * c < 0:
+        print("To je taj")
+        exit()
 
     y1 = (-b + math.sqrt(b * b - 4 * a * c)) / (2 * a)
     y2 = (-b - math.sqrt(b * b - 4 * a * c)) / (2 * a)
@@ -95,10 +141,5 @@ def getTwoPossibleCircles(x1_center, y1_center, x2_center, y2_center, r1, r2, r3
     x1 = (p - q * y1) / t
     x2 = (p - q * y2) / t
 
-    return x1, y1, x2, y2
+    return round(x1,2), round(y1,2), round(x2,2), round(y2,2)
 
-
-points_and_angles = [ ( 1+1j,math.pi/3), ( 1+1j,math.pi/3),( 1+1j,math.pi/3),( 1+1j,math.pi/3),( 1+1j,math.pi/3)]
-f = InverseSchwarzCristoffelMapping(points_and_angles,1)(2+3j)
-
-print(JoukowskyRealPartGradient(f))

@@ -2,6 +2,7 @@ import math
 
 import matplotlib
 import shapely
+import time
 
 matplotlib.use('TKAgg')
 
@@ -20,8 +21,8 @@ class ModelSample:
     Peclet = None
     R = None
     polygon = None
-    peripheral_penguins = {}
     central_penguins = {}
+    peripheral_penguins = {}
     circles = {}
     text = {}
 
@@ -32,13 +33,43 @@ class ModelSample:
         return Point(x, y).within(self.polygon)
 
     def generatePenguin(self, ID, edge, heat_loss, position, radius, neighbours):
-        self.peripheral_penguins[ID] = Penguin.Penguin(ID, edge, heat_loss, position,
+        self.central_penguins[ID] = Penguin.Penguin(ID, edge, heat_loss, position,
                                                        radius, neighbours)
         self.circles[ID] = plt.Circle(position, radius, fc="cyan", edgecolor="black")
         self.text[ID] = plt.text(position[0], position[1], str(ID))
 
+    def extractPeripheralPenguins(self, q):
+        startIndexOfPeripheralPenguin = q - 1
+        self.peripheral_penguins.append(self.central_penguins[startIndexOfPeripheralPenguin])
+
+        for index in self.central_penguins[q - 1].neighbours:
+            if self.central_penguins[index].edge:
+                break
+
+        indexOfPeripheralPenguin = index
+        previous_index = startIndexOfPeripheralPenguin
+
+        while startIndexOfPeripheralPenguin != indexOfPeripheralPenguin:
+            # find peripheral neighbour
+
+            list_of_neighbours = self.central_penguins[indexOfPeripheralPenguin].neighbours
+            minNeighbours = 7
+            indexTarget = 0
+            for index in list_of_neighbours:
+                if self.central_penguins[index].edge and index != previous_index and minNeighbours > len(
+                        self.central_penguins[index].neighbours):
+                    minNeighbours = len(self.central_penguins[index].neighbours)
+                    indexTarget = index
+
+            self.peripheral_penguins.append(self.central_penguins[indexOfPeripheralPenguin])
+            # del self.central_penguins[indexOfPeripheralPenguin]
+
+            previous_index = indexOfPeripheralPenguin
+            indexOfPeripheralPenguin = indexTarget
+
     def generatePenguins(self):
         # define polygon boundaries of huddle
+
         x, y = self.polygon.exterior.xy
 
         fig = plt.figure()
@@ -48,14 +79,15 @@ class ModelSample:
         # find center of polygon
         x, y = formulas.findCenterOfPolygon(self.polygon)
 
-        radius_of_penguin = formulas.getRadiusForCircles(formulas.areaOfPolygon(self.polygon), self.number)
+        #make corelation with formulas
+        radius_of_penguin = 0.9*formulas.getRadiusForCircles(formulas.areaOfPolygon(self.polygon), self.number)
 
         self.generatePenguin(0, True, 0, (x, y), radius_of_penguin, [1])
         board.add_patch(self.circles[0])
 
         plt.draw()
 
-        # if second circle 
+        # if second circle
         if shapely.geometry.Point(x, y + 2 * radius_of_penguin).within(self.polygon):
             y = y + 2 * radius_of_penguin
         else:
@@ -67,111 +99,187 @@ class ModelSample:
 
         q = 2  # variable for counting number of created penguins
 
-        for i in range(0, self.number):
+        for i in range(0, self.number - 1):
 
-            if i >= q or q >= self.number:
+            if q - 1 == self.number:
                 break
 
-            list_of_neighbours = self.peripheral_penguins[i].neighbours
+            list_of_neighbours = self.central_penguins[i].neighbours
 
-            x1 = self.peripheral_penguins[i].position[0]
-            y1 = self.peripheral_penguins[i].position[1]
+            x1 = self.central_penguins[i].position[0]
+            y1 = self.central_penguins[i].position[1]
 
             for j in list_of_neighbours:
 
-                x2 = self.peripheral_penguins[j].position[0]
-                y2 = self.peripheral_penguins[j].position[1]
-
-                try:
-                    x3, y3, x4, y4 = formulas.getTwoPossibleCircles(x1, y1, x2, y2, radius_of_penguin,
-                                                                    radius_of_penguin, radius_of_penguin)
-                except:
-                    print("Izuzetak")
+                if q - 1 == self.number:
+                    i = q
                     break
+
+                x2 = self.central_penguins[j].position[0]
+                y2 = self.central_penguins[j].position[1]
+
+                x3, y3, x4, y4 = formulas.getTwoPossibleCircles(x1, y1, x2, y2, radius_of_penguin,
+                                                                    radius_of_penguin, radius_of_penguin)
+
 
                 existFirst = False
                 existSecond = False
 
                 for k in list_of_neighbours:
-                    if abs(x3 - self.peripheral_penguins[k].position[0]) < 1 and abs(
-                            y3 - self.peripheral_penguins[k].position[1]) < 1:
+                    if abs(x3 - self.central_penguins[k].position[0]) < 1 and abs(
+                            y3 - self.central_penguins[k].position[1]) < 1 :
                         existFirst = True
-                    if abs(x4 - self.peripheral_penguins[k].position[0]) < 1 and abs(
-                            y4 - self.peripheral_penguins[k].position[1]) < 1:
+                    if abs(x4 - self.central_penguins[k].position[0]) < 1 and abs(
+                            y4 - self.central_penguins[k].position[1]) < 1 :
                         existSecond = True
+
+                if  i != 0 and not existFirst and not existSecond:
+                    print("Problem",i,j,"(x3,y3): ")
+                    print(self.central_penguins[j].neighbours)
+                    plt.show()
+                    exit()
 
                 if not existFirst and shapely.geometry.Point(x3, y3).within(self.polygon):
                     self.generatePenguin(q, True, 0, (x3, y3), radius_of_penguin, [i, j])
                     board.add_patch(self.circles[q])
                     plt.draw()
 
-                    self.peripheral_penguins[i].addNeighbour(q)
-                    self.peripheral_penguins[j].addNeighbour(q)
+                    self.central_penguins[i].addNeighbour(q)
+                    self.central_penguins[j].addNeighbour(q)
 
                     q += 1
-                    if q == self.number:
-                        break
 
                 if not existSecond and shapely.geometry.Point(x4, y4).within(self.polygon):
                     self.generatePenguin(q, True, 0, (x4, y4), radius_of_penguin, [i, j])
                     board.add_patch(self.circles[q])
-                    board.add_patch(self.circles[q])
                     plt.draw()
 
-                    self.peripheral_penguins[i].addNeighbour(q)
-                    self.peripheral_penguins[j].addNeighbour(q)
+                    self.central_penguins[i].addNeighbour(q)
+                    self.central_penguins[j].addNeighbour(q)
 
                     q += 1
-                    if q == self.number:
-                        break
+
 
                 if len(list_of_neighbours) == 6:
 
-                    x3, y3, x4, y4 = formulas.getTwoPossibleCircles(self.peripheral_penguins[i].position[0],
-                                                                    self.peripheral_penguins[i].position[1],
-                                                                    self.peripheral_penguins[q - 1].position[0],
-                                                                    self.peripheral_penguins[q - 1].position[1],
-                                                                    radius_of_penguin, radius_of_penguin,
-                                                                    radius_of_penguin)
+                    print("Q:", q-1, "x:", self.central_penguins[q - 1].position[0], "y:",
+                          self.central_penguins[q -1].position[1])
+
+                    x_center = self.central_penguins[q-1].position[0]
+                    y_center = self.central_penguins[q-1].position[1]
+
                     for k in list_of_neighbours:
+                        print("Izraz: ",(self.central_penguins[k].position[0] - x_center)**2 + (self.central_penguins[k].position[1] - y_center) ** 2 - (2*radius_of_penguin)**2)
 
-                        if abs(x3 - self.peripheral_penguins[k].position[0]) < 1 and abs(
-                                y3 - self.peripheral_penguins[k].position[1]) < 1 and not (
-                                k in self.peripheral_penguins[q - 1].neighbours):
-                            self.peripheral_penguins[k].neighbours.append(q - 1)
-                            self.peripheral_penguins[q - 1].neighbours.append(k)
+                        print(q-1 not in self.central_penguins[k].neighbours)
+                        print("K:",k,"x:",self.central_penguins[k].position[0],"y:",self.central_penguins[k].position[1])
+
+                        #print("K: ",k,":", self.central_penguins[k].neighbours)
+                        #print("Q-1:",q-1,":", self.central_penguins[q - 1].neighbours)
+
+                        if (abs( (self.central_penguins[k].position[0] - x_center)**2 +
+                                (self.central_penguins[k].position[1] - y_center) ** 2 -
+                                 (2*radius_of_penguin)**2) < 1 and
+                                q-1 not in self.central_penguins[k].neighbours):
+                            print("Usao")
+                            self.central_penguins[k].neighbours.append(q - 1)
+                            self.central_penguins[q - 1].neighbours.append(k)
+
                             break
 
-                        if abs(x4 - self.peripheral_penguins[k].position[0]) < 1 and abs(
-                                y4 - self.peripheral_penguins[k].position[1]) < 1 and not (
-                                k in self.peripheral_penguins[q - 1].neighbours):
-                            self.peripheral_penguins[k].neighbours.append(q - 1)
-                            self.peripheral_penguins[q - 1].neighbours.append(k)
-                            break
+                    break
 
-                    self.peripheral_penguins[i].edge = False
+                print("ID:",i,":",list_of_neighbours)
+                print("ID:", q-1, ":", self.central_penguins[q-1].neighbours)
 
-                    #self.central_penguins[i] = self.peripheral_penguins[i]
+        #make two heaps for peripheral and central penguins
+        print("Q iznosi",q)
 
-                    #del self.peripheral_penguins[i]
+        #self.extractPeripheralPenguins(q)
 
-                print(list_of_neighbours)
+
+
+        #find angles and delete central_penguins on edge whose are now on peripheral penguins
+        complexPoints_and_angles = {}
+
+        """boundary = len(self.peripheral_penguins)
+
+        for i in range(0, boundary):
+
+            x_center, y_center = self.peripheral_penguins[i].position
+
+            if i == 0:
+                x_left, y_left = self.peripheral_penguins[boundary-1]
+                x_right, y_right = self.peripheral_penguins[1]
+                complexPoints_and_angles[complex(x, y)] = formulas.angleBetweenPoints(complex(x_left, y_left),
+                                                                                      complex(x_center, y_center),
+                                                                                      complex(x_right, y_right))
+            elif i == boundary - 1:
+                x_left, y_left = self.peripheral_penguins[i - 1]
+                x_right, y_right = self.peripheral_penguins[0]
+                complexPoints_and_angles[complex(x, y)] = formulas.angleBetweenPoints(complex(x_left, y_left),
+                                                                                      complex(x_center, y_center),
+                                                                                      complex(x_right, y_right))
+            else :
+                x_left, y_left = self.peripheral_penguins[i - 1]
+                x_right, y_right = self.peripheral_penguins[i + 1]
+                complexPoints_and_angles[complex(x, y)] = formulas.angleBetweenPoints(complex(x_left, y_left), complex(x_center, y_center), complex(x_right, y_right))
+
+            del self.central_penguins[i]"""
+
         plt.show()
+
+        return {}
+
+    def computeBoundaries(self, penguinID):
+
+        above_boundary = 0
+        belove_boundary = 0
+        delta_r = 0
+        f = 0
+        return above_boundary, belove_boundary, delta_r, f
+    def updateHeatLosses(self):
+
+        max_heat_loss = float('-inf')
+        min_heat_loss = float('inf')
+
+        id_of_max_heat_loss = 0
+        id_of_min_heat_loss = 0
+        id_of_second_min_heat_loss_neighbour = 0
+
+        for penguinID, penguin in self.peripheral_penguins.items():
+
+            penguin.updateHeatLoss(self.computeBoundaries(penguinID))
+
+            if penguin.heat_loss >= max_heat_loss:
+                max_heat_loss = penguin.heat_loss
+                id_of_max_heat_loss = penguinID
+
+            if penguin.heat_loss <= min_heat_loss:
+                min_heat_loss = penguin.heat_loss
+                id_of_min_heat_loss = penguinID
+
+        min_heat_loss = float('inf')
+
+        for neighbourID in self.peripheral_penguins[id_of_min_heat_loss].neighbours:
+
+            if self.peripheral_penguins[neighbourID].heat_loss <= min_heat_loss and not self.peripheral_penguins[neighbourID].edge:
+                min_heat_loss = self.peripheral_penguins[neighbourID].heat_loss
+                id_of_second_min_heat_loss_neighbour = neighbourID
+
+        return id_of_max_heat_loss, id_of_min_heat_loss, id_of_second_min_heat_loss_neighbour
 
     def updateHeatLosses(self):
 
-
-        invers_SchwarzCristoffel_function = formulas.InverseSchwarzCristoffelMapping()
-
         for i in range(0, self.numbers):
-            if self.peripheral_penguins[i].edge:
+            if self.central_penguins[i].edge:
 
-                x, y = self.peripheral_penguins[i].position
+                x, y = self.central_penguins[i].position
                 x_p1 = 0.0
                 y_p1 = 0.0
                 counter = 0
 
-                for peng in self.peripheral_penguins[i].neighbours:
+                for peng in self.central_penguins[i].neighbours:
                     if peng.edge and counter == 0:
                         x_p1, y_p1 = peng.position
                         counter += 1
@@ -183,8 +291,28 @@ class ModelSample:
                 x_half2 = (x + x_p2) / 2
                 y_half2 = (y + y_p2) / 2
 
+    """def computeHeatLossForPeripheralPenguins(self, inverse_SchwarzCristoffel_function):
+        boundary = len(self.peripheral_penguins)
 
+        for i in range(0, boundary):
 
+            x_center, y_center = self.peripheral_penguins[i].position
+
+            if i == 0:
+                x_left_half = formulas.distance_between_two_points()
+            elif i == boundary - 1:
+                x_left, y_left = self.peripheral_penguins[i - 1]
+                x_right, y_right = self.peripheral_penguins[0]
+                complexPoints_and_angles[complex(x, y)] = formulas.angleBetweenPoints(complex(x_left, y_left),
+                                                                                      complex(x_center, y_center),
+                                                                                      complex(x_right, y_right))
+            else:
+                x_left, y_left = self.peripheral_penguins[i - 1]
+                x_right, y_right = self.peripheral_penguins[i + 1]
+                complexPoints_and_angles[complex(x, y)] = formulas.angleBetweenPoints(complex(x_left, y_left),
+                                                                                      complex(x_center, y_center),
+                                                                                      complex(x_right, y_right))
+    """
 
     def run(self):
         if self.name == "" or self.number == "" or self.Peclet == "" or self.R == "" or self.polygon == None:
@@ -195,6 +323,13 @@ class ModelSample:
             raise ValueError("Error: Peclet's number must be natural number!")
         if not self.R.isnumeric():
             raise ValueError("Error: R must be natural number!")
+
         self.number = int(self.number)
-        self.generatePenguins()
-        self.updateHeatLosses()
+
+        complexPoints_and_angles = self.generatePenguins()
+        print(complexPoints_and_angles)
+        """while True:
+            inverse_SchwarzCristoffel_function = formulas.InverseSchwarzCristoffelMapping(complexPoints_and_angles, 1)
+            max_heat_id, min_heat_id = self.computeHeatLossForPeripheralPenguins(inverse_SchwarzCristoffel_function)
+            #changePositions(max_heat_id, min_heat_id)
+        self.updateHeatLosses()"""

@@ -69,7 +69,7 @@ while True:
     model.R = values["-RINPUT-"]
 
     if event == "-SET-":
-        model.polygon = transform(lambda x, y: (x, y + 1000) , scale(Polygon(PlotPolygon.DrawPolygon()), yfact = -1, origin = (1, 0))).buffer(10000,join_style = 2)
+        model.polygon = transform(lambda x, y: (x, y + 1000) , scale(Polygon(PlotPolygon.DrawPolygon()), yfact = -1, origin = (1, 0))).buffer(10e1,join_style = 2)
     elif event == "-RUN-":
         try:
             model.run()
