@@ -36,7 +36,7 @@ class ModelSample:
         self.central_penguins[ID] = Penguin.Penguin(ID, edge, heat_loss, position,
                                                        radius, neighbours)
         self.circles[ID] = plt.Circle(position, radius, fc="cyan", edgecolor="black")
-        self.text[ID] = plt.text(position[0], position[1], str(ID))
+        self.text[ID] = plt.text(position[0], position[1], str(ID), fontsize = "xx-small")
 
     def extractPeripheralPenguins(self, q):
         startIndexOfPeripheralPenguin = q - 1
@@ -80,7 +80,7 @@ class ModelSample:
         x, y = formulas.findCenterOfPolygon(self.polygon)
 
         #make corelation with formulas
-        radius_of_penguin = 0.9*formulas.getRadiusForCircles(formulas.areaOfPolygon(self.polygon), self.number)
+        radius_of_penguin = formulas.getRadiusForCircles(formulas.areaOfPolygon(self.polygon), self.number)
 
         self.generatePenguin(0, True, 0, (x, y), radius_of_penguin, [1])
         board.add_patch(self.circles[0])
@@ -99,44 +99,51 @@ class ModelSample:
 
         q = 2  # variable for counting number of created penguins
 
-        for i in range(0, self.number - 1):
+        for i in range(0, self.number):
 
-            if q - 1 == self.number:
+            if i >= q or q == self.number:
                 break
 
-            list_of_neighbours = self.central_penguins[i].neighbours
-
+            try :
+                list_of_neighbours = self.central_penguins[i].neighbours
+            except :
+                print("Fula")
+                break
+                plt.show()
+                exit()
             x1 = self.central_penguins[i].position[0]
             y1 = self.central_penguins[i].position[1]
 
             for j in list_of_neighbours:
 
-                if q - 1 == self.number:
-                    i = q
+                if q == self.number:
                     break
 
                 x2 = self.central_penguins[j].position[0]
                 y2 = self.central_penguins[j].position[1]
 
-                x3, y3, x4, y4 = formulas.getTwoPossibleCircles(x1, y1, x2, y2, radius_of_penguin,
-                                                                    radius_of_penguin, radius_of_penguin)
-
+                print("i:",i,"j:",j)
+                x3, y3, x4, y4 = formulas.getTwoPossibleCircles(x1, y1, x2, y2, radius_of_penguin, radius_of_penguin, radius_of_penguin)
 
                 existFirst = False
                 existSecond = False
 
                 for k in list_of_neighbours:
-                    if abs(x3 - self.central_penguins[k].position[0]) < 1 and abs(
-                            y3 - self.central_penguins[k].position[1]) < 1 :
+                    if abs(x3 - self.central_penguins[k].position[0]) < 10e-1 and abs(
+                            y3 - self.central_penguins[k].position[1]) < 10e-1 :
                         existFirst = True
-                    if abs(x4 - self.central_penguins[k].position[0]) < 1 and abs(
-                            y4 - self.central_penguins[k].position[1]) < 1 :
+                    if abs(x4 - self.central_penguins[k].position[0]) < 10e-1 and abs(
+                            y4 - self.central_penguins[k].position[1]) < 10e-1 :
                         existSecond = True
 
                 if  i != 0 and not existFirst and not existSecond:
                     print("Problem",i,j,"(x3,y3): ")
                     print(self.central_penguins[j].neighbours)
                     plt.show()
+                    for i in range(0, q):
+                        print(self.central_penguins[i].ID, ":", "Position", self.central_penguins[i].position[0], ",",
+                              self.central_penguins[i].position[1], "Susjedi:",
+                              self.central_penguins[i].neighbours)
                     exit()
 
                 if not existFirst and shapely.geometry.Point(x3, y3).within(self.polygon):
@@ -162,39 +169,27 @@ class ModelSample:
 
                 if len(list_of_neighbours) == 6:
 
-                    print("Q:", q-1, "x:", self.central_penguins[q - 1].position[0], "y:",
-                          self.central_penguins[q -1].position[1])
-
-                    x_center = self.central_penguins[q-1].position[0]
-                    y_center = self.central_penguins[q-1].position[1]
+                    c = q-1
+                    c2 = complex(self.central_penguins[c].position[0], self.central_penguins[c].position[1])
 
                     for k in list_of_neighbours:
-                        print("Izraz: ",(self.central_penguins[k].position[0] - x_center)**2 + (self.central_penguins[k].position[1] - y_center) ** 2 - (2*radius_of_penguin)**2)
 
-                        print(q-1 not in self.central_penguins[k].neighbours)
-                        print("K:",k,"x:",self.central_penguins[k].position[0],"y:",self.central_penguins[k].position[1])
+                        c1 = complex(self.central_penguins[k].position[0], self.central_penguins[k].position[1])
 
-                        #print("K: ",k,":", self.central_penguins[k].neighbours)
-                        #print("Q-1:",q-1,":", self.central_penguins[q - 1].neighbours)
+                        if (abs(formulas.distance_between_two_points(c1, c2) - (2*radius_of_penguin)) < 10e-1 and
+                                c not in self.central_penguins[k].neighbours):
 
-                        if (abs( (self.central_penguins[k].position[0] - x_center)**2 +
-                                (self.central_penguins[k].position[1] - y_center) ** 2 -
-                                 (2*radius_of_penguin)**2) < 1 and
-                                q-1 not in self.central_penguins[k].neighbours):
-                            print("Usao")
-                            self.central_penguins[k].neighbours.append(q - 1)
-                            self.central_penguins[q - 1].neighbours.append(k)
+                            self.central_penguins[k].neighbours.append(c)
+                            self.central_penguins[c].neighbours.append(k)
 
                             break
 
+                    self.central_penguins[i].edge = False
                     break
 
-                print("ID:",i,":",list_of_neighbours)
-                print("ID:", q-1, ":", self.central_penguins[q-1].neighbours)
 
         #make two heaps for peripheral and central penguins
         print("Q iznosi",q)
-
         #self.extractPeripheralPenguins(q)
 
 
@@ -226,7 +221,10 @@ class ModelSample:
                 complexPoints_and_angles[complex(x, y)] = formulas.angleBetweenPoints(complex(x_left, y_left), complex(x_center, y_center), complex(x_right, y_right))
 
             del self.central_penguins[i]"""
-
+        for i in range(0, q):
+            print(self.central_penguins[i].ID, ":", "Position", self.central_penguins[i].position[0], ",",
+                  self.central_penguins[i].position[1], "Susjedi:",
+                  self.central_penguins[i].neighbours,self.central_penguins[i].edge)
         plt.show()
 
         return {}

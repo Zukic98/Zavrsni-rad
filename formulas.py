@@ -5,6 +5,10 @@ import matplotlib
 matplotlib.use('TKAgg')
 from matplotlib import pyplot as plt
 
+from sympy import nsolve
+
+from sympy.abc import x, y
+
 #points and angles must be dictionary where key is complex number and angle is float type
 def InverseSchwarzCristoffelMapping(points):
     file = open("dataTransfer.txt", "w")
@@ -102,34 +106,29 @@ def findCenterOfPolygon(polygon):
     return center.representative_point()[0].x.item(), center.representative_point()[0].y.item()
 
 def getTwoPossibleCircles(x1_center, y1_center, x2_center, y2_center, r1, r2, r3):
-    R1 = (r1 + r3)**2
-    R2 = (r2 + r3)**2
 
-    q = 2 * (y2_center-y1_center)
-    p = R1 - R2 -x1_center**2 + x2_center**2 - y1_center**2 + y2_center**2
+    R1 = (r1 + r3) ** 2
+    R2 = (r2 + r3) ** 2
+
+    p = R1 - R2 + x1_center ** 2 - x2_center ** 2 + y1_center ** 2 - y2_center ** 2
+    q = 2 * (y2_center - y1_center)
     t = 2 * (x2_center - x1_center)
 
-    if abs(t) < 1:
+    if abs(t) < 10e-3:
 
-        y = p / q
-        b = -2 * x1_center
-        c = x1_center ** 2 + y1_center ** 2 - 2 * y1_center * y + y ** 2 - R1
-        if b * b - 4 * c < 0:
-            print("This")
-        return round((-b + math.sqrt(b * b - 4 * c)) / 2,2), round(y,2), round((-b - math.sqrt(b * b - 4 * c)) / 2,2), round(y,2)
+        y = -p / q
 
-    if abs(q) < 1:
+        return x1_center + math.sqrt(R1 - (y1_center-y)**2), y, x1_center - math.sqrt(R1 - (y1_center-y)**2), y
 
-        x = p / t
-        b = -2 * y1_center
-        c = x1_center ** 2 - 2 * x1_center * x + x ** 2 + y1_center ** 2 - R1
-        if b ** 2 - 4 * c < 0:
-            print("Ovaj")
-        return round(x,2), round((-b + math.sqrt(b ** 2 - 4 * c)) / 2,2), round(x,2), round((-b - math.sqrt(b ** 2 - 4 * c)) / 2,2)
+    if abs(q) < 10e-3:
 
-    a = t**2 + q**2
-    b = 2 * x1_center * t * q - 2*p*q - 2*y1_center*t**2
-    c = x1_center**2 * t**2 - 2 * x1_center * t * p + p * p + y1_center**2 * t**2 - R1 * t**2
+        x = -p / t
+
+        return x, y1_center + math.sqrt(R1-(x1_center-x)**2), x, y1_center - math.sqrt(R1-(x1_center-x)**2)
+
+    a = t ** 2 + q ** 2
+    b = 2 * x1_center * t * q + 2 * p * q - 2 * y1_center * t ** 2
+    c = x1_center ** 2 * t ** 2 + 2 * x1_center * t * p + p * p + y1_center ** 2 * t ** 2 - R1 * t ** 2
 
     if b * b - 4 * a * c < 0:
         print("To je taj")
@@ -138,8 +137,8 @@ def getTwoPossibleCircles(x1_center, y1_center, x2_center, y2_center, r1, r2, r3
     y1 = (-b + math.sqrt(b * b - 4 * a * c)) / (2 * a)
     y2 = (-b - math.sqrt(b * b - 4 * a * c)) / (2 * a)
 
-    x1 = (p - q * y1) / t
-    x2 = (p - q * y2) / t
+    x1 = (-p - q * y1) / t
+    x2 = (-p - q * y2) / t
 
-    return round(x1,2), round(y1,2), round(x2,2), round(y2,2)
+    return x1, y1, x2, y2
 
