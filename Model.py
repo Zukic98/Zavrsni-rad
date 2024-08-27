@@ -1,3 +1,4 @@
+import cmath
 import math
 
 import matplotlib
@@ -20,7 +21,9 @@ class ModelSample:
     number = None
     Peclet = None
     R = None
+    delta_r = None
     polygon = None
+    numberOfIteration = 10
     central_penguins = {}
     peripheral_penguins = {}
     circles = {}
@@ -40,7 +43,7 @@ class ModelSample:
 
     def extractPeripheralPenguins(self, q):
         startIndexOfPeripheralPenguin = q - 1
-        self.peripheral_penguins.append(self.central_penguins[startIndexOfPeripheralPenguin])
+        self.peripheral_penguins[startIndexOfPeripheralPenguin] = self.central_penguins[startIndexOfPeripheralPenguin]
 
         for index in self.central_penguins[q - 1].neighbours:
             if self.central_penguins[index].edge:
@@ -53,19 +56,24 @@ class ModelSample:
             # find peripheral neighbour
 
             list_of_neighbours = self.central_penguins[indexOfPeripheralPenguin].neighbours
+
             minNeighbours = 7
             indexTarget = 0
+
             for index in list_of_neighbours:
                 if self.central_penguins[index].edge and index != previous_index and minNeighbours > len(
                         self.central_penguins[index].neighbours):
                     minNeighbours = len(self.central_penguins[index].neighbours)
                     indexTarget = index
 
-            self.peripheral_penguins.append(self.central_penguins[indexOfPeripheralPenguin])
-            # del self.central_penguins[indexOfPeripheralPenguin]
+            self.peripheral_penguins[indexOfPeripheralPenguin] = self.central_penguins[indexOfPeripheralPenguin]
 
             previous_index = indexOfPeripheralPenguin
             indexOfPeripheralPenguin = indexTarget
+
+        for edgeIndex in self.peripheral_penguins:
+            del self.central_penguins[edgeIndex]
+
 
     def generatePenguins(self):
         # define polygon boundaries of huddle
@@ -190,53 +198,46 @@ class ModelSample:
 
         #make two heaps for peripheral and central penguins
         print("Q iznosi",q)
-        #self.extractPeripheralPenguins(q)
+        self.extractPeripheralPenguins(q)
 
-
-
-        #find angles and delete central_penguins on edge whose are now on peripheral penguins
-        complexPoints_and_angles = {}
-
-        """boundary = len(self.peripheral_penguins)
-
-        for i in range(0, boundary):
-
-            x_center, y_center = self.peripheral_penguins[i].position
-
-            if i == 0:
-                x_left, y_left = self.peripheral_penguins[boundary-1]
-                x_right, y_right = self.peripheral_penguins[1]
-                complexPoints_and_angles[complex(x, y)] = formulas.angleBetweenPoints(complex(x_left, y_left),
-                                                                                      complex(x_center, y_center),
-                                                                                      complex(x_right, y_right))
-            elif i == boundary - 1:
-                x_left, y_left = self.peripheral_penguins[i - 1]
-                x_right, y_right = self.peripheral_penguins[0]
-                complexPoints_and_angles[complex(x, y)] = formulas.angleBetweenPoints(complex(x_left, y_left),
-                                                                                      complex(x_center, y_center),
-                                                                                      complex(x_right, y_right))
-            else :
-                x_left, y_left = self.peripheral_penguins[i - 1]
-                x_right, y_right = self.peripheral_penguins[i + 1]
-                complexPoints_and_angles[complex(x, y)] = formulas.angleBetweenPoints(complex(x_left, y_left), complex(x_center, y_center), complex(x_right, y_right))
-
-            del self.central_penguins[i]"""
         for i in range(0, q):
             print(self.central_penguins[i].ID, ":", "Position", self.central_penguins[i].position[0], ",",
                   self.central_penguins[i].position[1], "Susjedi:",
                   self.central_penguins[i].neighbours,self.central_penguins[i].edge)
         plt.show()
 
-        return {}
+        return self.peripheral_penguins
 
-    def computeBoundaries(self, penguinID):
+    def computeBoundaries(self, penguinID, inverse_SchwarzCristoffel_function):
 
-        above_boundary = 0
-        belove_boundary = 0
-        delta_r = 0
-        f = 0
-        return above_boundary, belove_boundary, delta_r, f
-    def updateHeatLosses(self):
+        z1 = 0+0j
+        z2 = 0+0j
+        firstFound = True
+
+        for neighbour_id in self.peripheral_penguins[penguinID].neighbours:
+            if self.peripheral_penguins[neighbour_id].edge:
+                if firstFound:
+                    z1 = complex(self.peripheral_penguins[neighbour_id].position[0],
+                                 self.peripheral_penguins[neighbour_id].position[1])
+                    firstFound = False
+                else:
+                    z2 = complex(self.peripheral_penguins[neighbour_id].position[0],
+                                 self.peripheral_penguins[neighbour_id].position[1])
+
+        point = self.peripheral_penguins[penguinID].position
+
+        zCenter = complex(point[0],point[1])
+
+        z1 = formulas.getCenterOfLine(z1, zCenter)
+        z2 = formulas.getCenterOfLine(z2, zCenter)
+
+        above_boundary = cmath.phase(inverse_SchwarzCristoffel_function(z1))
+
+        belove_boundary = cmath.phase(inverse_SchwarzCristoffel_function(z2))
+
+        return above_boundary, belove_boundary
+
+    def computeHeatLossForPeripheralPenguins(self, inverse_SchwarzCristoffel_function):
 
         max_heat_loss = float('-inf')
         min_heat_loss = float('inf')
@@ -247,7 +248,9 @@ class ModelSample:
 
         for penguinID, penguin in self.peripheral_penguins.items():
 
-            penguin.updateHeatLoss(self.computeBoundaries(penguinID))
+            above_boundary, belove_boundary = self.computeBoundaries(penguinID)
+
+            penguin.updateHeatLoss(above_boundary, belove_boundary, self.delta_r, self.R, self.Peclet)
 
             if penguin.heat_loss >= max_heat_loss:
                 max_heat_loss = penguin.heat_loss
@@ -267,50 +270,54 @@ class ModelSample:
 
         return id_of_max_heat_loss, id_of_min_heat_loss, id_of_second_min_heat_loss_neighbour
 
-    def updateHeatLosses(self):
+    def getPoints(self):
+        list_of_points = []
+        for x in self.peripheral_penguins.values():
+            list_of_points.append(x.position)
+        return list_of_points
 
-        for i in range(0, self.numbers):
-            if self.central_penguins[i].edge:
 
-                x, y = self.central_penguins[i].position
-                x_p1 = 0.0
-                y_p1 = 0.0
-                counter = 0
+    def changePositions(self, max_heat_id, min_heat_id, min_heat_id_neighbour):
 
-                for peng in self.central_penguins[i].neighbours:
-                    if peng.edge and counter == 0:
-                        x_p1, y_p1 = peng.position
-                        counter += 1
-                    elif peng.edge:
-                        x_p2, y_p2 = peng.position
-
-                x_half1 = (x + x_p1) / 2
-                y_half1 = (y + y_p1) / 2
-                x_half2 = (x + x_p2) / 2
-                y_half2 = (y + y_p2) / 2
-
-    """def computeHeatLossForPeripheralPenguins(self, inverse_SchwarzCristoffel_function):
-        boundary = len(self.peripheral_penguins)
-
-        for i in range(0, boundary):
-
-            x_center, y_center = self.peripheral_penguins[i].position
-
-            if i == 0:
-                x_left_half = formulas.distance_between_two_points()
-            elif i == boundary - 1:
-                x_left, y_left = self.peripheral_penguins[i - 1]
-                x_right, y_right = self.peripheral_penguins[0]
-                complexPoints_and_angles[complex(x, y)] = formulas.angleBetweenPoints(complex(x_left, y_left),
-                                                                                      complex(x_center, y_center),
-                                                                                      complex(x_right, y_right))
+        #eliminate max_heat_id from his neighbours
+        for neighbour_id in self.peripheral_penguins[max_heat_id].neighbours:
+            if neighbour_id in self.peripheral_penguins:
+                self.peripheral_penguins[neighbour_id].neighbours.remove(max_heat_id)
             else:
-                x_left, y_left = self.peripheral_penguins[i - 1]
-                x_right, y_right = self.peripheral_penguins[i + 1]
-                complexPoints_and_angles[complex(x, y)] = formulas.angleBetweenPoints(complex(x_left, y_left),
-                                                                                      complex(x_center, y_center),
-                                                                                      complex(x_right, y_right))
-    """
+                self.central_penguins[neighbour_id].neighbours.remove(max_heat_id)
+                if len(self.central_penguins[neighbour_id].neighbours) == 5:
+                    self.peripheral_penguins[neighbour_id] = self.central_penguins[neighbour_id]
+                    self.peripheral_penguins[neighbour_id].edge = True
+                    del self.central_penguins[neighbour_id]
+
+        self.peripheral_penguins[max_heat_id].neighbours = []
+
+        #add penguin next to new neighbours
+        firstPoint = self.peripheral_penguins[min_heat_id].position
+        secondPoint = self.peripheral_penguins[min_heat_id_neighbour].position
+
+        x1, y1, x2, y2 = formulas.getTwoPossibleCircles(firstPoint[0], firstPoint[1], secondPoint[0], secondPoint[1])
+
+        for neighbour_id in self.peripheral_penguins[min_heat_id].neighbours:
+            if neighbour_id in self.central_penguins and "JEDNAKI1":
+                self.peripheral_penguins[max_heat_id].position = (x1, y1)
+            if neighbour_id in self.central_penguins and "JEDNAKI2":
+                self.peripheral_penguins[max_heat_id].position = (x2, y2)
+
+        self.changePositionOnGUI(max_heat_id)
+
+        self.peripheral_penguins[min_heat_id].neighbours.append(max_heat_id)
+        self.peripheral_penguins[min_heat_id_neighbour].neighbours.append(max_heat_id)
+
+        if len(self.peripheral_penguins[min_heat_id].neighbours) == 6:
+            self.central_penguins[min_heat_id] = self.peripheral_penguins[min_heat_id]
+            del self.peripheral_penguins[min_heat_id]
+
+        if len(self.peripheral_penguins[min_heat_id_neighbour].neighbours) == 6:
+            self.central_penguins[min_heat_id_neighbour] = self.peripheral_penguins[min_heat_id_neighbour]
+            del self.peripheral_penguins[min_heat_id_neighbour]
+
+        self.peripheral_penguins[max_heat_id].neighbours.extend([min_heat_id, min_heat_id_neighbour])
 
     def run(self):
         if self.name == "" or self.number == "" or self.Peclet == "" or self.R == "" or self.polygon == None:
@@ -324,10 +331,11 @@ class ModelSample:
 
         self.number = int(self.number)
 
-        complexPoints_and_angles = self.generatePenguins()
-        print(complexPoints_and_angles)
-        """while True:
-            inverse_SchwarzCristoffel_function = formulas.InverseSchwarzCristoffelMapping(complexPoints_and_angles, 1)
-            max_heat_id, min_heat_id = self.computeHeatLossForPeripheralPenguins(inverse_SchwarzCristoffel_function)
-            #changePositions(max_heat_id, min_heat_id)
-        self.updateHeatLosses()"""
+        self.generatePenguins()
+
+        for i in range(0, self.numberOfIteration):
+
+            complexPoints = self.getComplexPoints()
+            inverse_SchwarzCristoffel_function = formulas.InverseSchwarzCristoffelMapping(complexPoints)
+            max_heat_id, min_heat_id, min_heat_id_neighbour = self.computeHeatLossForPeripheralPenguins(inverse_SchwarzCristoffel_function)
+            self.changePositions(max_heat_id, min_heat_id, min_heat_id_neighbour)

@@ -1,4 +1,3 @@
 import GUI
 
-
-
+GUI.runApplication()

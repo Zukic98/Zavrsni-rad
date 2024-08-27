@@ -1,15 +1,14 @@
 import math
 import geopandas as gpd
-from scipy.optimize import fsolve
+
 import matplotlib
 matplotlib.use('TKAgg')
-from matplotlib import pyplot as plt
 
-from sympy import nsolve
+##############################################################
+# Function provide first making skeleton for transformation  #
+# then return function for compute inverse SC in some point  #
+##############################################################
 
-from sympy.abc import x, y
-
-#points and angles must be dictionary where key is complex number and angle is float type
 def InverseSchwarzCristoffelMapping(points):
     file = open("dataTransfer.txt", "w")
 
@@ -17,6 +16,7 @@ def InverseSchwarzCristoffelMapping(points):
 
     string_x_array = ""
     string_y_array = ""
+
     for x,y in points:
         string_x_array = string_x_array + str(x) + ","
         string_y_array = string_y_array + str(y) + ","
@@ -56,14 +56,26 @@ def InverseSchwarzCristoffelMapping(points):
         return returnValue
 
     return product
-"""
-def JoukowskyRealPartGradient(z):
-    return 1 + (-z.real * z.real + z.imag * z.imag) / pow((z.real * z.real + z.imag * z.imag), 2), (-2 * z.real * z.imag) / pow((z.real * z.real + z.imag * z.imag), 2)
 
-def real_part_Joukowsky(z):
-    X, Y = z
-    return 1 + (Y * Y - X * X) / ((X * X + Y * Y) * (X * X + Y * Y)), (-2 * X * Y) / ((X * X + Y * Y) * (X * X + Y * Y))
-"""
+def realPartofJoukowskyTransform(complex_number : complex):
+    return complex_number.real*(1+(1/(complex_number.real**2 + complex_number.imag**2)))
+
+#Function provide solve of three-diagonal systems
+def solveSystemOfLinearEquation(p, q, r, b):
+
+    n = len(b)
+    x = [None] * n
+
+    for i in range(0,n-1):
+        mi = r[i]/p[i]
+        p[i+1] = p[i+1] - mi*q[i]
+        b[i+1] = b[i+1] - mi*b[i]
+
+    x[n-1] = b[n-1]/p[n-1]
+    for i in reversed(range(n-1)) :
+        x[i] = (b[i] - q[i]*x[i+1])/p[i]
+
+    return x
 
 def argument_of_complex_number(complex_number):
     return math.atan(complex_number.imag / complex_number.real)
@@ -73,19 +85,6 @@ def distance_between_two_points(complex1, complex2):
         (complex1.real - complex2.real) * (complex1.real - complex2.real) + (complex1.imag - complex2.imag) * (
                 complex1.imag - complex2.imag))
 
-def angleBetweenPoints(point1 , centralPoint, point2):
-    vector1 = [0, 0]
-    vector1[0] = point1[0] - centralPoint[0]
-    vector1[1] = point1[1] - centralPoint[1]
-
-    vector2 = [0, 0]
-    vector2[0] = point2[0] - centralPoint[0]
-    vector2[1] = point2[1] - centralPoint[1]
-
-    angle = math.acos((vector1[0]*vector2[0]+vector1[1]*vector2[1]) / (math.sqrt( vector1[0]**2 + vector1[1]**2) * math.sqrt( vector2[0]**2 + vector2[1]**2 )))
-    #if angle < 0:
-    #    angle = 180 - angle
-    return angle
 def areaOfPolygon(arrayOfPoints):
     area = 0.
 
@@ -103,7 +102,7 @@ def getRadiusForCircles(polygonsArea, n):
 
 def findCenterOfPolygon(polygon):
     center = gpd.GeoSeries([polygon])
-    return center.representative_point()[0].x.item(), center.representative_point()[0].y.item()
+    return center.representative_point()[0].x, center.representative_point()[0].y
 
 def getTwoPossibleCircles(x1_center, y1_center, x2_center, y2_center, r1, r2, r3):
 
@@ -130,10 +129,6 @@ def getTwoPossibleCircles(x1_center, y1_center, x2_center, y2_center, r1, r2, r3
     b = 2 * x1_center * t * q + 2 * p * q - 2 * y1_center * t ** 2
     c = x1_center ** 2 * t ** 2 + 2 * x1_center * t * p + p * p + y1_center ** 2 * t ** 2 - R1 * t ** 2
 
-    if b * b - 4 * a * c < 0:
-        print("To je taj")
-        exit()
-
     y1 = (-b + math.sqrt(b * b - 4 * a * c)) / (2 * a)
     y2 = (-b - math.sqrt(b * b - 4 * a * c)) / (2 * a)
 
@@ -142,3 +137,5 @@ def getTwoPossibleCircles(x1_center, y1_center, x2_center, y2_center, r1, r2, r3
 
     return x1, y1, x2, y2
 
+def getCenterOfLine(z, zCenter):
+    return complex((z.real + zCenter.real)/2,(z.imag + zCenter.imag)/2)
